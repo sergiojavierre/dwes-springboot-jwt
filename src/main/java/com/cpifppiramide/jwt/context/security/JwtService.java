@@ -1,7 +1,8 @@
 package com.cpifppiramide.jwt.context.security;
-import com.cpifppiramide.jwt.usuarios.domain.Usuario;
+
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -11,16 +12,24 @@ import java.util.Date;
 @Component
 public class JwtService {
 
-    private static final long EXPIRATION = 1000 * 60 * 60; // 1h
-    private static final String SECRET = "super-secret-key-jwt-cpifp-piramide-2025";
+    private final long expiration;
+    private final Key key;
 
-    private final Key key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+    // Inyectamos los valores directamente en el constructor
+    public JwtService(
+            @Value("${jwt.secret}") String secret,
+            @Value("${jwt.expiration}") long expiration) {
+
+        this.expiration = expiration;
+        // Generamos la key a partir del secret inyectado
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
 
     public String generateToken(String email) {
         return Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION))
+                .setExpiration(new Date(System.currentTimeMillis() + expiration)) // Usamos la variable inyectada
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -43,4 +52,3 @@ public class JwtService {
         }
     }
 }
-
